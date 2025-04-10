@@ -1,7 +1,6 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import fetch from "node-fetch";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -14,6 +13,108 @@ const server = new McpServer({
         tools: {},
     },
 });
+
+// Add a prompt to provide the Aurora API system instructions
+server.prompt(
+    "auroraApi",
+    { userQuestion: z.string() },
+    async ({ userQuestion }) => {
+        try {
+            // Read the system prompt file
+            const systemPromptPath = path.join(process.cwd(), 'src', 'prompts', 'AuroraApiSystemPrompt.md');
+            const systemPrompt = await fs.readFile(systemPromptPath, 'utf-8');
+
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: `${systemPrompt}${userQuestion}`,
+                        },
+                    },
+                ],
+            };
+        } catch (error) {
+            const err = error as Error;
+            console.error(`Error reading system prompt: ${err.message}`);
+            return {
+                messages: [
+                    {
+                        role: "user",
+                        content: {
+                            type: "text",
+                            text: `I'm having trouble accessing the Aurora API documentation. Could you please help me with: ${userQuestion}`,
+                        },
+                    },
+                ],
+            };
+        }
+    }
+);
+
+server.resource(
+    "aurora-docs",
+    new ResourceTemplate("aurora://docs/{docFile}", { list: undefined }),
+    async (uri, { docFile }) => {
+        // Initialize effectiveDocFile immediately to handle potential array and ensure it's assigned.
+        const effectiveDocFile = Array.isArray(docFile) ? docFile.join('/') : docFile;
+        try {
+            const filePath = path.join(process.cwd(), 'src', 'resources', effectiveDocFile);
+            const content = await fs.readFile(filePath, 'utf-8');
+
+            return {
+                contents: [{
+                    uri: uri.href,
+                    mimeType: "text/markdown",
+                    text: content
+                }]
+            };
+        } catch (error) {
+            const err = error as Error;
+            // effectiveDocFile is guaranteed to be assigned here.
+            console.error(`Error reading documentation file: ${err.message}`);
+            return {
+                contents: [{
+                    uri: uri.href,
+                    mimeType: "text/plain",
+                    text: `Error: Unable to fetch documentation file ${effectiveDocFile}: ${err.message}`
+                }]
+            };
+        }
+    }
+);
+
+// Add a resource to list all available documentation files
+server.resource(
+    "aurora-docs-list",
+    "aurora://docs",
+    async (uri) => {
+        try {
+            const docsDir = path.join(process.cwd(), 'src', 'resources');
+            const files = await fs.readdir(docsDir);
+            const filesList = files.map(file => `- ${file}`).join('\n');
+
+            return {
+                contents: [{
+                    uri: uri.href,
+                    mimeType: "text/markdown",
+                    text: `# Available Aurora Documentation Files\n\n${filesList}`
+                }]
+            };
+        } catch (error) {
+            const err = error as Error;
+            console.error(`Error reading documentation directory: ${err.message}`);
+            return {
+                contents: [{
+                    uri: uri.href,
+                    mimeType: "text/plain",
+                    text: `Error: Unable to list documentation files: ${err.message}`
+                }]
+            };
+        }
+    }
+);
 
 // const WistiaDocsParamsSchema = z.object({
 //     article_key: z.string(),
