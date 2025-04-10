@@ -14,7 +14,6 @@ const server = new McpServer({
     },
 });
 
-// Add a prompt to provide the Aurora API system instructions
 server.prompt(
     "auroraApi",
     { userQuestion: z.string() },
@@ -24,13 +23,17 @@ server.prompt(
             const systemPromptPath = path.join(process.cwd(), 'src', 'prompts', 'AuroraApiSystemPrompt.md');
             const systemPrompt = await fs.readFile(systemPromptPath, 'utf-8');
 
+            // Proactively fetch the API index
+            const indexPath = path.join(process.cwd(), 'src', 'resources', '00aurora-player-api-index.txt');
+            const apiIndex = await fs.readFile(indexPath, 'utf-8');
+
             return {
                 messages: [
                     {
                         role: "user",
                         content: {
                             type: "text",
-                            text: `${systemPrompt}${userQuestion}`,
+                            text: `${systemPrompt}\n\nAPI DOCUMENTATION OVERVIEW:\n${apiIndex}\n\nUser Question: ${userQuestion}\n\nREMEMBER: You MUST use the aurora://docs/ URLs to access specific documentation before answering.`
                         },
                     },
                 ],
@@ -79,37 +82,6 @@ server.resource(
                     uri: uri.href,
                     mimeType: "text/plain",
                     text: `Error: Unable to fetch documentation file ${effectiveDocFile}: ${err.message}`
-                }]
-            };
-        }
-    }
-);
-
-// Add a resource to list all available documentation files
-server.resource(
-    "aurora-docs-list",
-    "aurora://docs",
-    async (uri) => {
-        try {
-            const docsDir = path.join(process.cwd(), 'src', 'resources');
-            const files = await fs.readdir(docsDir);
-            const filesList = files.map(file => `- ${file}`).join('\n');
-
-            return {
-                contents: [{
-                    uri: uri.href,
-                    mimeType: "text/markdown",
-                    text: `# Available Aurora Documentation Files\n\n${filesList}`
-                }]
-            };
-        } catch (error) {
-            const err = error as Error;
-            console.error(`Error reading documentation directory: ${err.message}`);
-            return {
-                contents: [{
-                    uri: uri.href,
-                    mimeType: "text/plain",
-                    text: `Error: Unable to list documentation files: ${err.message}`
                 }]
             };
         }
