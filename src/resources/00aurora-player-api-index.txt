@@ -1,0 +1,17 @@
+<DOC_COLLECTION name="Aurora_Player_API">
+<OVERVIEW>
+The Aurora Player API by allows developers to control and customize Wistia's Aurora media player using JavaScript and Wistia-provided attributes, properties, methods, and events.
+</OVERVIEW>
+
+<FILES>
+- 01auroraEmbedApi.md: Starter guide to basic API usage with various Wistia embed types
+- 02auroraApiHandles.md: Starter guide to getting a handle on the aurora player
+- 03auroraAttrsPropsUsage.md: Usage guide to customizing aurora player with html attributes or javascript properties
+- 04auroraMethods.md: Usage guide and reference to aurora player methods
+- 05auroraEvents.md: Usage guide and reference to aurora player events
+- 06auroraPopoverApi.md: Usage guide and reference to popover API's unique attrs/props/methods/events for aurora popover embeds
+- 07auroraAttrsPropsQuickRef.md: Quick reference of Aurora player attrs and props
+- 06auroraAttrsPropsFullRef.md: Full reference of Aurora player attrs and props
+- 09auroraReadOnlyPropsFullRef.md: Full reference of Aurora player read-only props
+- 08auroraMultipleEmbeds.md: Usage guide to working with multiple aurora embeds on one page
+</FILES>
